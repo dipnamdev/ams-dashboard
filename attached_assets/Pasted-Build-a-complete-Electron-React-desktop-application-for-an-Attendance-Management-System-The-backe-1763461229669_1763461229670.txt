@@ -1,0 +1,379 @@
+Build a complete Electron + React desktop application for an Attendance Management System. The backend API is already running.
+
+Backend Info:
+
+Base URL: http://localhost:3000
+Auth: JWT tokens
+User Credentials:
+
+Admin: admin@company.com / employee123
+Employee: john.doe@company.com / employee123
+
+
+
+Available API Endpoints:
+# Auth
+POST /api/auth/login
+POST /api/auth/logout
+GET  /api/auth/me
+
+# Attendance
+POST /api/attendance/check-in
+POST /api/attendance/check-out
+GET  /api/attendance/status
+GET  /api/attendance/today
+GET  /api/attendance/history?start_date=&end_date=
+
+# Lunch Break
+POST /api/lunch-break/start
+POST /api/lunch-break/end
+GET  /api/lunch-break/current
+
+# Activity
+POST /api/activity/heartbeat
+GET  /api/activity/current
+
+# Screenshots
+POST /api/screenshots/upload
+GET  /api/screenshots/list?date=&user_id=
+GET  /api/screenshots/:id
+DELETE /api/screenshots/:id
+
+# Admin Only
+GET  /api/users
+POST /api/users (create employee)
+GET  /api/reports/daily?date=&user_id=
+GET  /api/reports/weekly?start_date=&user_id=
+GET  /api/reports/team-overview?date=
+
+App Requirements:
+1. Core Functionality:
+On App Start (System Startup):
+
+If user logged in → Show popup: "Mark In for today?"
+
+Button: "Mark In Now" → Call POST /api/attendance/check-in + start tracking
+Button: "Later" → Minimize to tray
+
+
+If not logged in → Show login page
+
+On System Shutdown:
+
+Auto call POST /api/attendance/check-out
+Stop all background services
+Upload pending data
+
+Auto-Start:
+
+App should launch on system boot
+Use app.setLoginItemSettings({ openAtLogin: true })
+
+
+2. Background Services (Electron Main Process):
+A. Screenshot Capture Service
+Every 10 minutes:
+- Capture screen using screenshot-desktop
+- Upload to POST /api/screenshots/upload
+- Include: timestamp, active_window_title, active_application
+B. Activity Heartbeat Service
+Every 30 seconds:
+- Get active window (using active-win)
+- Track mouse clicks & keyboard strokes (using iohook)
+- Get system idle time (powerMonitor.getSystemIdleTime())
+- Send to POST /api/activity/heartbeat with:
+  {
+    timestamp, active_window_title, active_application,
+    mouse_clicks, keyboard_strokes, is_active, idle_time_seconds
+  }
+C. Idle Detection
+Every 30 seconds:
+- Check system idle time
+- If idle > 5 minutes:
+  - Show notification: "You are inactive for X minutes"
+  - Update UI to show idle status
+
+3. UI Pages (React):
+A. Login Page
+Simple centered form:
+- Email input
+- Password input
+- "Login" button
+- Show errors if login fails
+B. Employee Dashboard
+┌────────────────────────────────────────────┐
+│ Attendance Tracker        👤 User [Logout] │
+├────────────────────────────────────────────┤
+│                                             │
+│ Status: 🟢 Active / 🟡 Idle (X minutes)   │
+│                                             │
+│ TODAY'S SUMMARY                             │
+│ ├─ Check In:  09:15 AM                     │
+│ ├─ Active:    4h 32m                       │
+│ ├─ Idle:      45m                          │
+│ ├─ Break:     30m                          │
+│ └─ Total:     5h 47m                       │
+│                                             │
+│ [Mark In] [Mark Out]                       │
+│ [Lunch Out] [Lunch In]                     │
+│                                             │
+│ RECENT SCREENSHOTS                          │
+│ [📷 10:00] [📷 10:10] [📷 10:20]           │
+│                                             │
+│ [View All Screenshots] [Attendance History]│
+└────────────────────────────────────────────┘
+Features:
+
+Real-time status (Active/Idle)
+Idle warning if inactive > 5 minutes
+Mark In button → POST /api/attendance/check-in
+Mark Out button → POST /api/attendance/check-out
+Lunch Out button → POST /api/lunch-break/start
+Lunch In button → POST /api/lunch-break/end
+Disable buttons based on current status
+Auto-refresh data every 30 seconds
+
+C. Screenshots Page
+- Date picker (default: today)
+- Grid of screenshot thumbnails (4 per row)
+- Click thumbnail → Show full image in modal
+- Show: timestamp, application name
+- Delete button (trash icon)
+D. Attendance History Page
+- Date range picker
+- Table:
+  | Date       | Check In | Check Out | Active | Idle | Break | Total |
+  |------------|----------|-----------|--------|------|-------|-------|
+  | 2024-11-18 | 09:15 AM | 06:30 PM  | 7h 30m | 45m  | 30m   | 9h 15m|
+- Pagination (10 per page)
+E. Settings Page
+- ☑ Auto-start on system boot
+- ☑ Show idle notifications
+- Screenshot interval: [10] minutes (dropdown: 5, 10, 15, 30)
+- Idle threshold: [5] minutes (dropdown: 3, 5, 10, 15)
+- API URL: [http://localhost:3000]
+- [Save Settings] button
+F. Admin Dashboard (if role === 'admin')
+TEAM OVERVIEW
+- Total Employees: 15
+- Present Today: 12
+- Absent: 3
+
+ACTIVE EMPLOYEES LIST
+- 🟢 John Doe - Active (6h 30m) [View Details]
+- 🟡 Jane Smith - Idle (12m) [View Details]
+- 🔴 Mike - Not Checked In [View Details]
+
+[Create New Employee] button
+
+Tabs: [Dashboard] [Manage Employees] [Reports]
+G. Employee Management (Admin Only)
+[+ Create New Employee] button
+
+Table:
+| Name      | Email             | Employee ID | Status | Actions        |
+|-----------|-------------------|-------------|--------|----------------|
+| John Doe  | john@company.com  | EMP002      | Active | [Edit][Delete] |
+
+Create Employee Modal:
+- Name (required)
+- Email (required)
+- Employee ID (auto-generate or manual)
+- Password (required, min 8 chars)
+- Role: [Employee ▼] or Admin
+- [Create] [Cancel]
+H. Reports Page (Admin Only)
+Filters:
+- Report Type: [Daily ▼] / Weekly / Monthly
+- Date/Date Range picker
+- Employee: [All ▼] or select specific
+
+Display:
+- Total Hours chart (bar/pie)
+- Active vs Idle breakdown
+- Top 5 most used applications
+- Productivity score
+
+[Export CSV] button
+
+4. System Tray:
+Tray Menu:
+Attendance Tracker
+─────────────────
+● Status: Active / Idle / Not Marked In
+─────────────────
+✓ Mark In
+☐ Mark Out
+☕ Lunch Out
+☕ Lunch In
+─────────────────
+📊 Open Dashboard
+⚙️ Settings
+─────────────────
+❌ Quit
+Tray Icon Colors:
+
+🟢 Green: Active
+🟡 Yellow: Idle
+🔴 Red: Not marked in
+
+Notifications:
+
+"Marked in successfully!"
+"You've been idle for 5 minutes"
+"Screenshot captured"
+"Don't forget to mark out!"
+
+
+5. Tech Stack:
+json{
+  "dependencies": {
+    "electron": "^28.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.0",
+    "axios": "^1.6.0",
+    "active-win": "^8.0.0",
+    "screenshot-desktop": "^1.12.7",
+    "iohook": "^0.9.3",
+    "electron-store": "^8.1.0",
+    "date-fns": "^2.30.0",
+    "lucide-react": "^0.294.0",
+    "recharts": "^2.10.0"
+  },
+  "devDependencies": {
+    "electron-builder": "^24.9.1",
+    "vite": "^5.0.0",
+    "tailwindcss": "^3.3.0"
+  }
+}
+```
+
+**Use Vite + React for the renderer process**
+
+---
+
+### **6. Project Structure:**
+```
+attendance-app/
+├── electron/
+│   ├── main.js (entry point)
+│   ├── preload.js
+│   └── services/
+│       ├── screenshotService.js
+│       ├── activityService.js
+│       ├── idleDetector.js
+│       └── apiClient.js
+├── src/ (React app)
+│   ├── App.jsx
+│   ├── main.jsx
+│   ├── pages/
+│   │   ├── Login.jsx
+│   │   ├── Dashboard.jsx
+│   │   ├── Screenshots.jsx
+│   │   ├── History.jsx
+│   │   ├── Settings.jsx
+│   │   └── admin/
+│   │       ├── AdminDashboard.jsx
+│   │       ├── EmployeeManagement.jsx
+│   │       └── Reports.jsx
+│   ├── components/
+│   │   ├── Navbar.jsx
+│   │   ├── ActivityStatus.jsx
+│   │   ├── ScreenshotGallery.jsx
+│   │   └── AttendanceTable.jsx
+│   ├── services/
+│   │   ├── api.js (axios setup)
+│   │   └── auth.js
+│   ├── hooks/
+│   │   ├── useAuth.js
+│   │   └── useAttendance.js
+│   └── utils/
+│       └── formatTime.js
+├── package.json
+└── vite.config.js
+
+7. Key Implementation Details:
+IPC Communication (Main ↔ Renderer):
+javascript// In electron/preload.js
+contextBridge.exposeInMainWorld('electron', {
+  captureScreenshot: () => ipcRenderer.invoke('capture-screenshot'),
+  getActiveWindow: () => ipcRenderer.invoke('get-active-window'),
+  getIdleTime: () => ipcRenderer.invoke('get-idle-time'),
+  onUserIdle: (callback) => ipcRenderer.on('user-idle', callback),
+  startTracking: () => ipcRenderer.send('start-tracking'),
+  stopTracking: () => ipcRenderer.send('stop-tracking')
+});
+Auto Check-in Popup:
+javascript// In electron/main.js
+app.on('ready', async () => {
+  const token = store.get('jwt_token');
+  
+  if (token) {
+    // Create modal window
+    const modal = new BrowserWindow({
+      width: 400,
+      height: 250,
+      frame: false,
+      alwaysOnTop: true,
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.js')
+      }
+    });
+    
+    modal.loadFile('checkin-prompt.html');
+  } else {
+    createMainWindow(); // Show login
+  }
+});
+Auto Check-out on Shutdown:
+javascriptapp.on('before-quit', async (event) => {
+  event.preventDefault();
+  
+  const token = store.get('jwt_token');
+  
+  if (token) {
+    try {
+      await axios.post('http://localhost:3000/api/attendance/check-out', {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      console.log('✅ Auto check-out successful');
+    } catch (error) {
+      console.error('❌ Check-out failed:', error);
+    }
+  }
+  
+  app.exit(0);
+});
+Button State Logic (React):
+javascriptconst [attendance, setAttendance] = useState(null);
+const [isOnBreak, setIsOnBreak] = useState(false);
+
+// Disable/Enable buttons based on state
+const canMarkIn = !attendance?.check_in_time;
+const canMarkOut = attendance?.check_in_time && !attendance?.check_out_time;
+const canLunchOut = attendance?.check_in_time && !isOnBreak;
+const canLunchIn = isOnBreak;
+
+8. Deliverables:
+
+✅ Working Electron + React app with Vite
+✅ Login page with authentication
+✅ Employee dashboard with Mark In/Out/Lunch buttons
+✅ Auto check-in popup on startup
+✅ Auto check-out on shutdown
+✅ Background services (screenshot every 10min, heartbeat every 30sec)
+✅ Idle detection with notifications (>5 min)
+✅ Screenshot gallery page
+✅ Attendance history page
+✅ Settings page
+✅ System tray with menu
+✅ Admin dashboard (if role=admin)
+✅ Employee management (admin only)
+✅ Reports page (admin only)
+✅ Auto-start on system boot
+✅ Proper error handling
+✅ Build configuration for Windows/Mac/Linux
+
+
+Build this complete Electron + React application. Use Tailwind CSS for styling. Ensure all buttons work correctly based on current attendance state. Test with the provided backend API.
