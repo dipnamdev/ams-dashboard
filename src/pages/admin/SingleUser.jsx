@@ -1,44 +1,64 @@
+
 import React, { useState, useEffect } from 'react';
-import Navbar from '../components/Navbar';
-import { Calendar, Trash2, X, Clock, Monitor, MousePointer, Image as ImageIcon, User } from 'lucide-react';
-import api from '../services/api';
-import { formatDateTime, formatDurationFromSeconds } from '../utils/formatTime';
+import Navbar from '../../components/Navbar';
+import { Calendar, User, Clock, Monitor, MousePointer, Image as ImageIcon, X } from 'lucide-react';
+import api from '../../services/api';
+import { formatDurationFromSeconds } from '../../utils/formatTime';
 
-function Screenshots() {
-  const [screenshots, setScreenshots] = useState([]);
-  const [activityHistory, setActivityHistory] = useState([]);
-  const [dailySummary, setDailySummary] = useState(null);
+function SingleUser() {
+  const [employees, setEmployees] = useState([]);
+  const [selectedEmployee, setSelectedEmployee] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [activityHistory, setActivityHistory] = useState([]);
+  const [screenshots, setScreenshots] = useState([]);
+  const [dailySummary, setDailySummary] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [apiBaseUrl, setApiBaseUrl] = useState(import.meta.env.VITE_BACKEND_BASE_URL || '');
-  const [failedImages, setFailedImages] = useState({});
+  const [apiBaseUrl, setApiBaseUrl] = useState(import.meta.env.VITE_BACKEND_BASE_URL || 'http://localhost:5000');
   const [authToken, setAuthToken] = useState('');
+  const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
-    fetchAllData();
-  }, [selectedDate]);
-
-  useEffect(() => {
-    const token = localStorage.getItem('jwt_token');
-    if (token) setAuthToken(token);
+    fetchEmployees();
+    loadApiConfig();
   }, []);
 
-  const fetchAllData = async () => {
+  useEffect(() => {
+    if (selectedEmployee && selectedDate) {
+      fetchData();
+    }
+  }, [selectedEmployee, selectedDate]);
+
+  const loadApiConfig = async () => {
+    const token = localStorage.getItem('jwt_token');
+    if (token) setAuthToken(token);
+  };
+
+  const fetchEmployees = async () => {
+    try {
+      const response = await api.get('/api/users');
+      setEmployees(response.data.data?.users || []);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+    }
+  };
+
+  const fetchData = async () => {
     setLoading(true);
     try {
-      const [screenshotRes, activityRes, attendanceRes] = await Promise.all([
-        api.get(`/api/screenshots/list?date=${selectedDate}`),
+      const [activityRes, screenshotRes, attendanceRes] = await Promise.all([
         api.get('/api/activity/history', {
-          params: { date: selectedDate }
+          params: { date: selectedDate, user_id: selectedEmployee }
+        }),
+        api.get('/api/screenshots/list', {
+          params: { date: selectedDate, user_id: selectedEmployee }
         }),
         api.get('/api/attendance/history', {
-          params: { start_date: selectedDate, end_date: selectedDate }
+          params: { start_date: selectedDate, end_date: selectedDate, user_id: selectedEmployee }
         })
       ]);
 
-      setScreenshots(screenshotRes.data.data?.screenshots || []);
       setActivityHistory(activityRes.data.data?.history || []);
+      setScreenshots(screenshotRes.data.data?.screenshots || []);
 
       const history = attendanceRes.data.data?.history || [];
       setDailySummary(history.length > 0 ? history[0] : null);
@@ -49,18 +69,8 @@ function Screenshots() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this screenshot?')) return;
-
-    try {
-      await api.delete(`/api/screenshots/${id}`);
-      setScreenshots(screenshots.filter(s => s.id !== id));
-      if (selectedImage?.id === id) {
-        setSelectedImage(null);
-      }
-    } catch (error) {
-      alert('Failed to delete screenshot');
-    }
+  const formatTime = (isoString) => {
+    return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   const getImageUrl = (screenshot, type = 'thumbnail') => {
@@ -71,55 +81,48 @@ function Screenshots() {
     return `${apiBaseUrl}/api/screenshots/${screenshot.id}/file?type=${variant}&t=${cacheBuster}${tokenParam}`;
   };
 
-  const renderThumbnail = (screenshot) => {
-    const src = getImageUrl(screenshot, 'thumbnail');
-    if (!apiBaseUrl || !src || failedImages[screenshot.id]) {
-      return (
-        <div className="bg-gray-200 h-48 flex items-center justify-center">
-          <span className="text-4xl">📷</span>
-        </div>
-      );
-    }
-    return (
-      <img
-        src={src}
-        alt={screenshot.active_application || 'Screenshot thumbnail'}
-        className="h-48 w-full object-cover"
-        onError={() =>
-          setFailedImages((prev) => ({
-            ...prev,
-            [screenshot.id]: true,
-          }))
-        }
-      />
-    );
-  };
-
-  const formatTime = (isoString) => {
-    return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">My Activity</h1>
-          <p className="mt-2 text-gray-600">View your daily activity logs, screenshots, and work summary.</p>
+          <h1 className="text-3xl font-bold text-gray-900">Single User Activity</h1>
+          <p className="mt-2 text-gray-600">View detailed activity logs and screenshots for a specific employee.</p>
         </div>
 
-        {/* Date Selector */}
+        {/* Controls */}
         <div className="bg-white rounded-xl shadow-sm p-6 mb-8 border border-gray-100">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Select Date</h2>
-            <div className="flex items-center space-x-2">
-              <Calendar size={20} className="text-gray-400" />
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-              />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Select Employee</label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <select
+                  value={selectedEmployee}
+                  onChange={(e) => setSelectedEmployee(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                >
+                  <option value="">Choose an employee...</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.name} ({emp.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Select Date</label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                <input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -284,15 +287,6 @@ function Screenshots() {
                             {shot.active_window_title || 'Unknown Window'}
                           </p>
                         </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(shot.id);
-                          }}
-                          className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Trash2 size={16} />
-                        </button>
                       </div>
                     ))}
                   </div>
@@ -306,42 +300,42 @@ function Screenshots() {
             </div>
           </div>
         )}
-      </div>
 
-      {/* Screenshot Modal */}
-      {selectedImage && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" onClick={() => setSelectedImage(null)}>
-          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b">
-              <div>
-                <h3 className="font-bold text-lg">{selectedImage.active_application || 'Screenshot'}</h3>
-                <p className="text-sm text-gray-500">{new Date(selectedImage.timestamp).toLocaleString()}</p>
+        {/* Screenshot Modal */}
+        {selectedImage && (
+          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" onClick={() => setSelectedImage(null)}>
+            <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between p-4 border-b">
+                <div>
+                  <h3 className="font-bold text-lg">{selectedImage.active_application || 'Screenshot'}</h3>
+                  <p className="text-sm text-gray-500">{new Date(selectedImage.timestamp).toLocaleString()}</p>
+                </div>
+                <button
+                  onClick={() => setSelectedImage(null)}
+                  className="text-gray-500 hover:text-gray-700 p-1 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <X size={24} />
+                </button>
               </div>
-              <button
-                onClick={() => setSelectedImage(null)}
-                className="text-gray-500 hover:text-gray-700 p-1 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X size={24} />
-              </button>
-            </div>
-            <div className="flex-1 overflow-auto p-4 bg-gray-100 flex items-center justify-center">
-              <img
-                src={getImageUrl(selectedImage, 'full')}
-                alt={selectedImage.active_application || 'Screenshot'}
-                className="max-w-full max-h-[70vh] object-contain shadow-lg"
-                onError={(e) => { e.target.src = 'https://via.placeholder.com/800x600?text=Failed+to+load+image'; }}
-              />
-            </div>
-            <div className="p-4 border-t bg-white">
-              <p className="text-sm text-gray-600">
-                <span className="font-medium">Window Title:</span> {selectedImage.active_window_title || 'N/A'}
-              </p>
+              <div className="flex-1 overflow-auto p-4 bg-gray-100 flex items-center justify-center">
+                <img
+                  src={getImageUrl(selectedImage, 'full')}
+                  alt={selectedImage.active_application || 'Screenshot'}
+                  className="max-w-full max-h-[70vh] object-contain shadow-lg"
+                  onError={(e) => { e.target.src = 'https://via.placeholder.com/800x600?text=Failed+to+load+image'; }}
+                />
+              </div>
+              <div className="p-4 border-t bg-white">
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Window Title:</span> {selectedImage.active_window_title || 'N/A'}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
 
-export default Screenshots;
+export default SingleUser;

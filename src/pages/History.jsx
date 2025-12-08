@@ -27,7 +27,7 @@ function History() {
     setLoading(true);
     try {
       const response = await api.get(`/api/attendance/history?start_date=${startDate}&end_date=${endDate}`);
-      setHistory(response.data);
+      setHistory(response.data.data?.history || []);
     } catch (error) {
       console.error('Error fetching history:', error);
     } finally {
@@ -109,16 +109,16 @@ function History() {
                         {formatTime(record.check_out_time)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                        {formatDurationFromSeconds(record.active_time)}
+                        {formatDurationFromSeconds(record.total_active_duration)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-yellow-600">
-                        {formatDurationFromSeconds(record.idle_time)}
+                        {formatDurationFromSeconds(record.total_idle_duration)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-orange-600">
-                        {formatDurationFromSeconds(record.break_time)}
+                        {formatDurationFromSeconds(record.total_break_duration)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">
-                        {formatDurationFromSeconds(record.total_time)}
+                        {formatDurationFromSeconds(record.total_work_duration)}
                       </td>
                     </tr>
                   ))}

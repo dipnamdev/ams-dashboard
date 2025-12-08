@@ -6,7 +6,6 @@ function Settings() {
   const [autoStart, setAutoStart] = useState(true);
   const [showIdleNotifications, setShowIdleNotifications] = useState(true);
   const [screenshotInterval, setScreenshotInterval] = useState(10);
-  const [idleThreshold, setIdleThreshold] = useState(5);
   const [apiUrl, setApiUrl] = useState('http://localhost:3000');
   const [loading, setLoading] = useState(false);
 
@@ -15,36 +14,17 @@ function Settings() {
   }, []);
 
   const loadSettings = async () => {
-    if (window.electronAPI) {
-      const settings = {
-        autoStart: await window.electronAPI.getStoreValue('autoStart') ?? true,
-        showIdleNotifications: await window.electronAPI.getStoreValue('showIdleNotifications') ?? true,
-        screenshotInterval: await window.electronAPI.getStoreValue('screenshotInterval') ?? 10,
-        idleThreshold: await window.electronAPI.getStoreValue('idleThreshold') ?? 5,
-        apiUrl: await window.electronAPI.getStoreValue('apiUrl') ?? 'http://localhost:3000',
-      };
-      setAutoStart(settings.autoStart);
-      setShowIdleNotifications(settings.showIdleNotifications);
-      setScreenshotInterval(settings.screenshotInterval);
-      setIdleThreshold(settings.idleThreshold);
-      setApiUrl(settings.apiUrl);
-    }
+    // In web-only mode, load basic defaults from environment/localStorage
+    const storedApiUrl = localStorage.getItem('apiUrl') || import.meta.env.VITE_BACKEND_BASE_URL || 'http://localhost:3000';
+    setApiUrl(storedApiUrl);
   };
 
   const handleSave = async () => {
     setLoading(true);
     try {
-      if (window.electronAPI) {
-        await window.electronAPI.setStoreValue('autoStart', autoStart);
-        await window.electronAPI.setStoreValue('showIdleNotifications', showIdleNotifications);
-        await window.electronAPI.setStoreValue('screenshotInterval', screenshotInterval);
-        await window.electronAPI.setStoreValue('idleThreshold', idleThreshold);
-        await window.electronAPI.setStoreValue('apiUrl', apiUrl);
-        
-        window.electronAPI.showNotification('Settings Saved', 'Your settings have been updated successfully');
-      } else {
-        alert('Settings saved (requires Electron)');
-      }
+      // Persist minimal web settings
+      localStorage.setItem('apiUrl', apiUrl);
+      alert('Settings saved');
     } catch (error) {
       alert('Failed to save settings');
     } finally {
@@ -110,20 +90,7 @@ function Settings() {
               </select>
             </div>
 
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <h3 className="font-medium mb-2">Idle threshold</h3>
-              <p className="text-sm text-gray-500 mb-3">Time before being marked as idle</p>
-              <select
-                value={idleThreshold}
-                onChange={(e) => setIdleThreshold(parseInt(e.target.value))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value={3}>3 minutes</option>
-                <option value={5}>5 minutes</option>
-                <option value={10}>10 minutes</option>
-                <option value={15}>15 minutes</option>
-              </select>
-            </div>
+
 
             <div className="p-4 bg-gray-50 rounded-lg">
               <h3 className="font-medium mb-2">API URL</h3>

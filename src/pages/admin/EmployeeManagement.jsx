@@ -23,7 +23,7 @@ function EmployeeManagement() {
   const fetchEmployees = async () => {
     try {
       const response = await api.get('/api/users');
-      setEmployees(response.data);
+      setEmployees(response.data.data?.users || []);
     } catch (error) {
       console.error('Error fetching employees:', error);
     }
@@ -32,7 +32,7 @@ function EmployeeManagement() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       if (editingEmployee) {
         await api.put(`/api/users/${editingEmployee.id}`, formData);
@@ -44,6 +44,7 @@ function EmployeeManagement() {
       setEditingEmployee(null);
       await fetchEmployees();
     } catch (error) {
+      console.error('Save employee error:', error);
       alert(error.response?.data?.message || 'Failed to save employee');
     } finally {
       setLoading(false);
@@ -52,7 +53,7 @@ function EmployeeManagement() {
 
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this employee?')) return;
-    
+
     try {
       await api.delete(`/api/users/${id}`);
       await fetchEmployees();
@@ -134,7 +135,10 @@ function EmployeeManagement() {
                     <div className="text-sm text-gray-500">{employee.employee_id}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs rounded-full ${employee.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
+                    <span className={`px-2 py-1 text-xs rounded-full ${employee.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                      employee.role === 'hr' ? 'bg-orange-100 text-orange-800' :
+                        'bg-blue-100 text-blue-800'
+                      }`}>
                       {employee.role}
                     </span>
                   </td>
@@ -238,6 +242,7 @@ function EmployeeManagement() {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="employee">Employee</option>
+                  <option value="hr">HR</option>
                   <option value="admin">Admin</option>
                 </select>
               </div>

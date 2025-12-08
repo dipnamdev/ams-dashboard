@@ -8,7 +8,7 @@ export const useAttendance = () => {
   const fetchAttendance = async () => {
     try {
       const response = await api.get('/api/attendance/today');
-      setAttendance(response.data);
+      setAttendance(response.data.data?.attendance || null);
     } catch (error) {
       console.error('Error fetching attendance:', error);
     } finally {

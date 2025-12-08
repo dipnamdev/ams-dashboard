@@ -20,7 +20,7 @@ function AdminDashboard() {
     try {
       const date = new Date().toISOString().split('T')[0];
       const response = await api.get(`/api/reports/team-overview?date=${date}`);
-      setTeamOverview(response.data);
+      setTeamOverview(response.data.data?.overview || null);
     } catch (error) {
       console.error('Error fetching team overview:', error);
     } finally {

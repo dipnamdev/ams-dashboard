@@ -18,7 +18,7 @@ function Login() {
     try {
       await login(email, password);
       navigate('/dashboard');
-      window.location.reload();
+      // window.location.reload();
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
     } finally {
@@ -37,7 +37,7 @@ function Login() {
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">
           Attendance Tracker
         </h2>
-        
+
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             {error}
@@ -81,12 +81,6 @@ function Login() {
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
-
-        <div className="mt-6 text-sm text-gray-600 text-center">
-          <p>Demo Credentials:</p>
-          <p>Admin: admin@company.com / employee123</p>
-          <p>Employee: john.doe@company.com / employee123</p>
-        </div>
       </div>
     </div>
   );
