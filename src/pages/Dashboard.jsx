@@ -80,7 +80,7 @@ function Dashboard() {
             <Clock className="mr-2" size={20} />
             TODAY'S SUMMARY
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="p-4 bg-blue-50 rounded">
               <p className="text-sm text-gray-600">Check In</p>
               <p className="text-xl font-bold text-blue-600">{formatTime(attendance?.check_in_time)}</p>
@@ -107,12 +107,6 @@ function Dashboard() {
               <p className="text-sm text-gray-600">Break Time</p>
               <p className="text-xl font-bold text-purple-600">
                 {formatDurationFromSeconds(attendance?.break_time || 0)}
-              </p>
-            </div>
-            <div className="p-4 bg-gray-50 rounded">
-              <p className="text-sm text-gray-600">App Offline</p>
-              <p className="text-xl font-bold text-gray-600">
-                {formatDurationFromSeconds(attendance?.untracked_time || 0)}
               </p>
             </div>
           </div>
