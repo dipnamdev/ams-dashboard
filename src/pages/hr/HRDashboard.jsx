@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
-import { Users, UserCheck, UserX, BarChart3, Clock } from 'lucide-react';
+import { Users, UserCheck, UserX, BarChart3, Clock, Mail, Fingerprint, Activity, Timer, ChevronRight, Hash, CalendarClock } from 'lucide-react';
 import api from '../../services/api';
 import { formatDurationFromSeconds } from '../../utils/formatTime';
 
@@ -118,89 +118,115 @@ function HRDashboard() {
           </div>
 
           {teamOverview?.employees && teamOverview.employees.length > 0 ? (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
               {teamOverview.employees.map((employee) => (
                 <div
                   key={employee.id}
-                  className="flex flex-col md:flex-row md:items-center md:justify-between p-5 bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl hover:shadow-md hover:scale-[1.01] transition-all duration-200"
+                  className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group"
                 >
-                  {/* Employee Info */}
-                  <div className="flex flex-col md:flex-row md:items-center gap-4">
-                    <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 font-semibold text-lg">
-                      {employee.name?.charAt(0).toUpperCase() || "?"}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-900 text-lg">
-                        {employee.name}{" "}
-                        <span className="text-sm text-gray-500">({employee.employee_id})</span>
-                      </p>
-                      <p className="text-sm text-gray-600">{employee.email}</p>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        <span
-                          className={`text-xs font-medium px-2.5 py-1 rounded-full ${employee.break_start_time && !employee.break_end_time
-                              ? "bg-orange-100 text-orange-700"
-                              : employee.status === "Checked In"
-                                ? "bg-green-100 text-green-700"
-                                : employee.status === "Checked Out"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-gray-100 text-gray-600"
-                            }`}
+                  {/* Card Header & Status */}
+                  <div className="p-5 border-b border-gray-50">
+                    <div className="flex justify-between items-start">
+                      <div className="flex gap-4">
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold text-white shadow-md transform group-hover:scale-105 transition-transform duration-300
+                            ${employee.status === "Checked In" ? "bg-gradient-to-br from-green-400 to-green-600" :
+                            employee.break_start_time && !employee.break_end_time ? "bg-gradient-to-br from-orange-400 to-orange-600" :
+                              "bg-gradient-to-br from-gray-400 to-gray-600"}`}
                         >
-                          {employee.break_start_time && !employee.break_end_time
-                            ? "On Lunch Break"
-                            : employee.status || "N/A"}
-                        </span>
-                        {employee.total_work_duration > 0 && (
-                          <span className="text-xs font-medium px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full">
-                            Work: {formatDurationFromSeconds(employee.total_work_duration)}
-                          </span>
-                        )}
-                        {employee.total_active_duration > 0 && (
-                          <span className="text-xs font-medium px-2.5 py-1 bg-purple-100 text-purple-700 rounded-full">
-                            Active: {formatDurationFromSeconds(employee.total_active_duration)}
-                          </span>
-                        )}
-                        {employee.total_idle_duration > 0 && (
-                          <span className="text-xs font-medium px-2.5 py-1 bg-yellow-100 text-yellow-700 rounded-full">
-                            Idle: {formatDurationFromSeconds(employee.total_idle_duration)}
-                          </span>
-                        )}
+                          {employee.name?.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <h4 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                            {employee.name}
+                          </h4>
+                          <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                            <Mail size={14} />
+                            <span className="truncate max-w-[150px]">{employee.email}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-gray-400 mt-1 bg-gray-50 px-2 py-0.5 rounded-full w-fit">
+                            <Hash size={12} />
+                            <span>{employee.employee_id}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Status Badge */}
+                      <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 border
+                          ${employee.break_start_time && !employee.break_end_time
+                          ? "bg-orange-50 text-orange-600 border-orange-100"
+                          : employee.status === "Checked In"
+                            ? "bg-green-50 text-green-600 border-green-100"
+                            : "bg-gray-50 text-gray-500 border-gray-100"}`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${employee.break_start_time && !employee.break_end_time ? "bg-orange-500 animate-pulse" : employee.status === "Checked In" ? "bg-green-500 animate-pulse" : "bg-gray-400"}`}></span>
+                        {employee.break_start_time && !employee.break_end_time
+                          ? "On Break"
+                          : employee.status || "Offline"}
                       </div>
                     </div>
                   </div>
 
-                  {/* Time Info */}
-                  <div className="mt-4 md:mt-0 flex flex-col items-start md:items-end text-sm text-gray-600">
-                    <p>
-                      <span className="font-medium text-gray-800">Check-in:</span>{" "}
-                      {employee.check_in_time
-                        ? new Date(employee.check_in_time).toLocaleTimeString()
-                        : "N/A"}
-                    </p>
-                    <p>
-                      <span className="font-medium text-gray-800">Check-out:</span>{" "}
-                      {employee.check_out_time
-                        ? new Date(employee.check_out_time).toLocaleTimeString()
-                        : "N/A"}
-                    </p>
-                    <p>
-                      <span className="font-medium text-gray-800">Break-Out:</span>{" "}
-                      {employee.break_out_time
-                        ? new Date(employee.break_out_time).toLocaleTimeString()
-                        : "N/A"}
-                    </p>
-                    <p>
-                      <span className="font-medium text-gray-800">Break-In:</span>{" "}
-                      {employee.break_in_time
-                        ? new Date(employee.break_in_time).toLocaleTimeString()
-                        : "N/A"}
-                    </p>
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-3 divide-x divide-gray-50 bg-gray-50/30">
+                    <div className="p-4 text-center hover:bg-white transition-colors">
+                      <div className="flex items-center justify-center gap-1.5 text-blue-600 mb-1">
+                        <Clock size={16} />
+                        <span className="text-xs font-semibold uppercase tracking-wider">Work</span>
+                      </div>
+                      <span className="font-mono font-medium text-gray-900">
+                        {formatDurationFromSeconds(employee.total_work_duration)}
+                      </span>
+                    </div>
+                    <div className="p-4 text-center hover:bg-white transition-colors">
+                      <div className="flex items-center justify-center gap-1.5 text-purple-600 mb-1">
+                        <Activity size={16} />
+                        <span className="text-xs font-semibold uppercase tracking-wider">Active</span>
+                      </div>
+                      <span className="font-mono font-medium text-gray-900">
+                        {formatDurationFromSeconds(employee.total_active_duration)}
+                      </span>
+                    </div>
+                    <div className="p-4 text-center hover:bg-white transition-colors">
+                      <div className="flex items-center justify-center gap-1.5 text-yellow-600 mb-1">
+                        <Timer size={16} />
+                        <span className="text-xs font-semibold uppercase tracking-wider">Idle</span>
+                      </div>
+                      <span className="font-mono font-medium text-gray-900">
+                        {formatDurationFromSeconds(employee.total_idle_duration)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Break Info Banner */}
+                  {(employee.break_start_time && !employee.break_end_time) && (
+                    <div className="bg-orange-50 px-5 py-2 flex items-center justify-center gap-2 text-xs font-medium text-orange-700 border-y border-orange-100">
+                      <Clock size={12} />
+                      <span>Started break at {new Date(employee.break_start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                  )}
+
+                  {/* Timeline Footer */}
+                  <div className="p-4 flex items-center justify-between text-sm">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <div className="w-6 text-xs text-gray-400">IN</div>
+                        <span className={`font-medium ${employee.check_in_time ? "text-gray-900" : "text-gray-400"}`}>
+                          {employee.check_in_time ? new Date(employee.check_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <div className="w-6 text-xs text-gray-400">OUT</div>
+                        <span className={`font-medium ${employee.check_out_time ? "text-gray-900" : "text-gray-400"}`}>
+                          {employee.check_out_time ? new Date(employee.check_out_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--"}
+                        </span>
+                      </div>
+                    </div>
 
                     <button
                       onClick={() => navigate(`/admin/reports?employee=${employee.id}`)}
-                      className="mt-3 inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors duration-200"
+                      className="flex items-center gap-1 pl-4 pr-3 py-2 rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100 font-medium text-xs transition-colors"
                     >
-                      <BarChart3 size={16} /> View Details
+                      Details <ChevronRight size={14} />
                     </button>
                   </div>
                 </div>
