@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
-import { Users, UserCheck, UserX, BarChart3, Clock, Mail, Fingerprint, Activity, Timer, ChevronRight, Hash, CalendarClock } from 'lucide-react';
+import { Users, UserCheck, UserX, BarChart3, Clock, Mail, Fingerprint, Activity, Timer, ChevronRight, Hash, CalendarClock, Search } from 'lucide-react';
 import api from '../../services/api';
 import { formatDurationFromSeconds } from '../../utils/formatTime';
 
 function HRDashboard() {
   const [teamOverview, setTeamOverview] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -108,129 +109,121 @@ function HRDashboard() {
         {/* Employee List */}
 
         <div className="bg-white rounded-2xl shadow-lg p-8 transition-all duration-300 hover:shadow-2xl">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
             <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
               <Users className="text-blue-600" size={28} /> Employees Overview
             </h3>
-            <span className="text-sm text-gray-500">
-              Updated: {new Date().toLocaleTimeString()}
-            </span>
+
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search employees..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none w-full md:w-64"
+              />
+              <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
+            </div>
           </div>
 
-          {teamOverview?.employees && teamOverview.employees.length > 0 ? (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              {teamOverview.employees.map((employee) => (
-                <div
-                  key={employee.id}
-                  className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group"
-                >
-                  {/* Card Header & Status */}
-                  <div className="p-5 border-b border-gray-50">
-                    <div className="flex justify-between items-start">
-                      <div className="flex gap-4">
-                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold text-white shadow-md transform group-hover:scale-105 transition-transform duration-300
-                            ${employee.status === "Checked In" ? "bg-gradient-to-br from-green-400 to-green-600" :
-                            employee.break_start_time && !employee.break_end_time ? "bg-gradient-to-br from-orange-400 to-orange-600" :
-                              "bg-gradient-to-br from-gray-400 to-gray-600"}`}
-                        >
-                          {employee.name?.charAt(0).toUpperCase()}
+          {!loading && teamOverview?.employees ? (
+            <div className="space-y-4">
+              {teamOverview.employees
+                .filter(emp =>
+                  emp.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  emp.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                  emp.employee_id?.toLowerCase().includes(searchTerm.toLowerCase())
+                )
+                .map((employee) => (
+                  <div
+                    key={employee.id}
+                    className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+                      {/* Name & Basic Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start xl:block">
+                          <div>
+                            <h4 className="text-lg font-bold text-gray-900 truncate">
+                              {employee.name}
+                            </h4>
+                            <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                              <Mail size={14} className="flex-shrink-0" />
+                              <span className="truncate">{employee.email}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
+                              <Hash size={12} />
+                              <span>{employee.employee_id}</span>
+                            </div>
+                          </div>
+
+                          {/* Mobile Status Badge */}
+                          <div className="xl:hidden">
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-medium border
+                              ${employee.break_start_time && !employee.break_end_time
+                                  ? "bg-orange-50 text-orange-600 border-orange-100"
+                                  : employee.status === "Checked In"
+                                    ? "bg-green-50 text-green-600 border-green-100"
+                                    : "bg-gray-50 text-gray-500 border-gray-100"}`}
+                            >
+                              {employee.break_start_time && !employee.break_end_time
+                                ? "On Break"
+                                : employee.status || "Offline"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Timeline Grid */}
+                      <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 border-t xl:border-t-0 xl:border-l border-gray-100 pt-4 xl:pt-0 xl:pl-8">
+                        <div>
+                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Check In</p>
+                          <p className={`font-mono font-medium ${employee.check_in_time ? "text-gray-900" : "text-gray-400"}`}>
+                            {employee.check_in_time ? new Date(employee.check_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--"}
+                          </p>
                         </div>
                         <div>
-                          <h4 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
-                            {employee.name}
-                          </h4>
-                          <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
-                            <Mail size={14} />
-                            <span className="truncate max-w-[150px]">{employee.email}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-gray-400 mt-1 bg-gray-50 px-2 py-0.5 rounded-full w-fit">
-                            <Hash size={12} />
-                            <span>{employee.employee_id}</span>
-                          </div>
+                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Lunch Start</p>
+                          <p className={`font-mono font-medium ${employee.break_out_time || employee.break_start_time ? "text-orange-700" : "text-gray-400"}`}>
+                            {(employee.break_out_time || employee.break_start_time) ? new Date(employee.break_out_time || employee.break_start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Lunch End</p>
+                          <p className={`font-mono font-medium ${employee.break_in_time ? "text-green-700" : "text-gray-400"}`}>
+                            {employee.break_in_time ? new Date(employee.break_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Check Out</p>
+                          <p className={`font-mono font-medium ${employee.check_out_time ? "text-gray-900" : "text-gray-400"}`}>
+                            {employee.check_out_time ? new Date(employee.check_out_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--"}
+                          </p>
                         </div>
                       </div>
 
-                      {/* Status Badge */}
-                      <div className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 border
+                      {/* Desktop Status Badge */}
+                      <div className="hidden xl:flex items-center justify-end w-32">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium border text-center w-full
                           ${employee.break_start_time && !employee.break_end_time
-                          ? "bg-orange-50 text-orange-600 border-orange-100"
-                          : employee.status === "Checked In"
-                            ? "bg-green-50 text-green-600 border-green-100"
-                            : "bg-gray-50 text-gray-500 border-gray-100"}`}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full ${employee.break_start_time && !employee.break_end_time ? "bg-orange-500 animate-pulse" : employee.status === "Checked In" ? "bg-green-500 animate-pulse" : "bg-gray-400"}`}></span>
-                        {employee.break_start_time && !employee.break_end_time
-                          ? "On Break"
-                          : employee.status || "Offline"}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Stats Grid */}
-                  <div className="grid grid-cols-3 divide-x divide-gray-50 bg-gray-50/30">
-                    <div className="p-4 text-center hover:bg-white transition-colors">
-                      <div className="flex items-center justify-center gap-1.5 text-blue-600 mb-1">
-                        <Clock size={16} />
-                        <span className="text-xs font-semibold uppercase tracking-wider">Work</span>
-                      </div>
-                      <span className="font-mono font-medium text-gray-900">
-                        {formatDurationFromSeconds(employee.total_work_duration)}
-                      </span>
-                    </div>
-                    <div className="p-4 text-center hover:bg-white transition-colors">
-                      <div className="flex items-center justify-center gap-1.5 text-purple-600 mb-1">
-                        <Activity size={16} />
-                        <span className="text-xs font-semibold uppercase tracking-wider">Active</span>
-                      </div>
-                      <span className="font-mono font-medium text-gray-900">
-                        {formatDurationFromSeconds(employee.total_active_duration)}
-                      </span>
-                    </div>
-                    <div className="p-4 text-center hover:bg-white transition-colors">
-                      <div className="flex items-center justify-center gap-1.5 text-yellow-600 mb-1">
-                        <Timer size={16} />
-                        <span className="text-xs font-semibold uppercase tracking-wider">Idle</span>
-                      </div>
-                      <span className="font-mono font-medium text-gray-900">
-                        {formatDurationFromSeconds(employee.total_idle_duration)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Break Info Banner */}
-                  {(employee.break_start_time && !employee.break_end_time) && (
-                    <div className="bg-orange-50 px-5 py-2 flex items-center justify-center gap-2 text-xs font-medium text-orange-700 border-y border-orange-100">
-                      <Clock size={12} />
-                      <span>Started break at {new Date(employee.break_start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                    </div>
-                  )}
-
-                  {/* Timeline Footer */}
-                  <div className="p-4 flex items-center justify-between text-sm">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <div className="w-6 text-xs text-gray-400">IN</div>
-                        <span className={`font-medium ${employee.check_in_time ? "text-gray-900" : "text-gray-400"}`}>
-                          {employee.check_in_time ? new Date(employee.check_in_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--"}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <div className="w-6 text-xs text-gray-400">OUT</div>
-                        <span className={`font-medium ${employee.check_out_time ? "text-gray-900" : "text-gray-400"}`}>
-                          {employee.check_out_time ? new Date(employee.check_out_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--"}
+                              ? "bg-orange-50 text-orange-600 border-orange-100"
+                              : employee.status === "Checked In"
+                                ? "bg-green-50 text-green-600 border-green-100"
+                                : "bg-gray-50 text-gray-500 border-gray-100"}`}
+                        >
+                          {employee.break_start_time && !employee.break_end_time
+                            ? "On Break"
+                            : employee.status || "Offline"}
                         </span>
                       </div>
                     </div>
-
-                    <button
-                      onClick={() => navigate(`/admin/reports?employee=${employee.id}`)}
-                      className="flex items-center gap-1 pl-4 pr-3 py-2 rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100 font-medium text-xs transition-colors"
-                    >
-                      Details <ChevronRight size={14} />
-                    </button>
                   </div>
-                </div>
-              ))}
+                ))}
+              {teamOverview.employees.length === 0 && (
+                <p className="text-center text-gray-500 py-8">No employees found.</p>
+              )}
             </div>
           ) : (
             <div className="text-center py-16 text-gray-500">
