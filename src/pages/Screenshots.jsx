@@ -177,7 +177,7 @@ function Screenshots() {
           </div>
         )}
 
-        {/* Screenshot Modal */}
+              {/* Screenshot Modal */}
       {selectedImage && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" onClick={() => setSelectedImage(null)}>
           <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
@@ -216,6 +216,60 @@ function Screenshots() {
           </div>
         ) : (
           <div className="space-y-8">
+            {/* Screenshots Grid */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <ImageIcon size={20} className="text-purple-600" />
+                  Screenshots
+                </h2>
+                <span className="text-sm text-gray-500">{screenshots.length} screenshots</span>
+              </div>
+
+              <div className="p-6">
+                {screenshots.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {screenshots.map((shot) => (
+                      <div
+                        key={shot.id}
+                        className="group relative bg-gray-50 rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                        onClick={() => setSelectedImage(shot)}
+                      >
+                        <div className="aspect-video bg-gray-200 relative overflow-hidden">
+                          <img
+                            src={getImageUrl(shot, 'thumbnail')}
+                            alt="Screenshot"
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            onError={(e) => { e.target.src = 'https://via.placeholder.com/300x200?text=No+Image'; }}
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity" />
+                        </div>
+                        <div className="p-3">
+                          <p className="text-sm font-medium text-gray-900 mb-1">{formatTime(shot.timestamp)}</p>
+                          <p className="text-xs text-gray-500 truncate" title={shot.active_window_title}>
+                            {shot.active_window_title || 'Unknown Window'}
+                          </p>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(shot.id);
+                          }}
+                          className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-gray-500">
+                    <ImageIcon size={48} className="mx-auto text-gray-300 mb-4" />
+                    <p>No screenshots available for this date.</p>
+                  </div>
+                )}
+              </div>
+            </div>
             {/* Activity Timeline */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
@@ -280,61 +334,6 @@ function Screenshots() {
                     )}
                   </tbody>
                 </table>
-              </div>
-            </div>
-
-            {/* Screenshots Grid */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <ImageIcon size={20} className="text-purple-600" />
-                  Screenshots
-                </h2>
-                <span className="text-sm text-gray-500">{screenshots.length} screenshots</span>
-              </div>
-
-              <div className="p-6">
-                {screenshots.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {screenshots.map((shot) => (
-                      <div
-                        key={shot.id}
-                        className="group relative bg-gray-50 rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-                        onClick={() => setSelectedImage(shot)}
-                      >
-                        <div className="aspect-video bg-gray-200 relative overflow-hidden">
-                          <img
-                            src={getImageUrl(shot, 'thumbnail')}
-                            alt="Screenshot"
-                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                            onError={(e) => { e.target.src = 'https://via.placeholder.com/300x200?text=No+Image'; }}
-                          />
-                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity" />
-                        </div>
-                        <div className="p-3">
-                          <p className="text-sm font-medium text-gray-900 mb-1">{formatTime(shot.timestamp)}</p>
-                          <p className="text-xs text-gray-500 truncate" title={shot.active_window_title}>
-                            {shot.active_window_title || 'Unknown Window'}
-                          </p>
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete(shot.id);
-                          }}
-                          className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 text-gray-500">
-                    <ImageIcon size={48} className="mx-auto text-gray-300 mb-4" />
-                    <p>No screenshots available for this date.</p>
-                  </div>
-                )}
               </div>
             </div>
           </div>
