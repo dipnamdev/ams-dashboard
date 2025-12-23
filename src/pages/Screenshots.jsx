@@ -177,6 +177,39 @@ function Screenshots() {
           </div>
         )}
 
+        {/* Screenshot Modal */}
+      {selectedImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" onClick={() => setSelectedImage(null)}>
+          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b">
+              <div>
+                <h3 className="font-bold text-lg">{selectedImage.active_application || 'Screenshot'}</h3>
+                <p className="text-sm text-gray-500">{new Date(selectedImage.timestamp).toLocaleString()}</p>
+              </div>
+              <button
+                onClick={() => setSelectedImage(null)}
+                className="text-gray-500 hover:text-gray-700 p-1 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-4 bg-gray-100 flex items-center justify-center">
+              <img
+                src={getImageUrl(selectedImage, 'full')}
+                alt={selectedImage.active_application || 'Screenshot'}
+                className="max-w-full max-h-[70vh] object-contain shadow-lg"
+                onError={(e) => { e.target.src = 'https://via.placeholder.com/800x600?text=Failed+to+load+image'; }}
+              />
+            </div>
+            <div className="p-4 border-t bg-white">
+              <p className="text-sm text-gray-600">
+                <span className="font-medium">Window Title:</span> {selectedImage.active_window_title || 'N/A'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -308,38 +341,7 @@ function Screenshots() {
         )}
       </div>
 
-      {/* Screenshot Modal */}
-      {selectedImage && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4" onClick={() => setSelectedImage(null)}>
-          <div className="bg-white rounded-lg max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b">
-              <div>
-                <h3 className="font-bold text-lg">{selectedImage.active_application || 'Screenshot'}</h3>
-                <p className="text-sm text-gray-500">{new Date(selectedImage.timestamp).toLocaleString()}</p>
-              </div>
-              <button
-                onClick={() => setSelectedImage(null)}
-                className="text-gray-500 hover:text-gray-700 p-1 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X size={24} />
-              </button>
-            </div>
-            <div className="flex-1 overflow-auto p-4 bg-gray-100 flex items-center justify-center">
-              <img
-                src={getImageUrl(selectedImage, 'full')}
-                alt={selectedImage.active_application || 'Screenshot'}
-                className="max-w-full max-h-[70vh] object-contain shadow-lg"
-                onError={(e) => { e.target.src = 'https://via.placeholder.com/800x600?text=Failed+to+load+image'; }}
-              />
-            </div>
-            <div className="p-4 border-t bg-white">
-              <p className="text-sm text-gray-600">
-                <span className="font-medium">Window Title:</span> {selectedImage.active_window_title || 'N/A'}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }
