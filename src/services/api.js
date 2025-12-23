@@ -1,4 +1,5 @@
 import axios from 'axios';
+import toast from 'react-hot-toast';
 // import dotenv from 'dotenv'
 
 
@@ -41,9 +42,9 @@ api.interceptors.response.use(
       localStorage.removeItem('jwt_token');
       localStorage.removeItem('user');
       emitAuthChange(null);
-      if (typeof window !== 'undefined') {
-        window.location.hash = '/';
-      }
+      toast.error('Session expired. Please login again.');
+      // Use window.location to ensure a full redirection if needed, or rely on state
+      // window.location.hash = '/'; 
     }
     return Promise.reject(error);
   }

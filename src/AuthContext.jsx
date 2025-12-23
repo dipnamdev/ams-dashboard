@@ -1,14 +1,22 @@
 import { createContext, useEffect, useState } from "react";
-import { getCurrentUser } from "./services/auth";
+import { getCurrentUser, getMe } from "./services/auth";
 
 export const AuthContext = createContext(null);
 
- function AuthProvider({ children }) {
+function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
     (async () => {
-      setUser(await getCurrentUser());
+      const userFromStorage = await getCurrentUser();
+      setUser(userFromStorage);
+      if (userFromStorage) {
+        try {
+          await getMe();
+        } catch (error) {
+          // Error handled by api interceptor
+        }
+      }
     })();
 
     const handler = async (e) => {
