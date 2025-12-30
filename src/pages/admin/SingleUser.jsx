@@ -219,6 +219,62 @@ function SingleUser() {
           </div>
         ) : (
           <div className="space-y-8">
+            {/* Screenshots Grid */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <ImageIcon size={20} className="text-blue-600" />
+                  Screenshots
+                </h2>
+                <span className="text-sm text-gray-500">{screenshots.length} screenshots found</span>
+              </div>
+
+              <div className="p-6">
+                {screenshots.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {screenshots.map((screenshot) => (
+                      <div
+                        key={screenshot.id}
+                        className="group bg-gray-50 rounded-lg border border-gray-100 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+                        onClick={() => setSelectedImage(screenshot)}
+                      >
+                        <div className="aspect-video w-full overflow-hidden bg-gray-200 relative">
+                          <img
+                            src={getImageUrl(screenshot, 'thumbnail')}
+                            alt={screenshot.active_application || 'Screenshot'}
+                            className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
+                            onError={(e) => { e.target.src = 'https://via.placeholder.com/400x225?text=No+Image'; }}
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all flex items-center justify-center">
+                            <ImageIcon className="text-white opacity-0 group-hover:opacity-100 transform scale-75 group-hover:scale-100 transition-all" size={32} />
+                          </div>
+                        </div>
+                        <div className="p-3">
+                          <p className="text-sm font-medium text-gray-900 truncate" title={screenshot.active_window_title}>
+                            {screenshot.active_window_title || screenshot.active_application || 'Unknown Window'}
+                          </p>
+                          <div className="flex items-center justify-between mt-1">
+                            <p className="text-xs text-blue-600 font-medium">
+                              {formatTime(screenshot.timestamp)}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate max-w-[50%]" title={screenshot.active_application}>
+                              {screenshot.active_application}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                    <ImageIcon className="mx-auto mb-3 text-gray-300" size={48} />
+                    <p>No screenshots available for this date.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Activity Timeline */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
