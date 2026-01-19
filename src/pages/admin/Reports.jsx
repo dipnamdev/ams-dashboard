@@ -148,119 +148,99 @@ function Reports() {
           </div>
         </div>
 
-        {reportData && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Pie Chart */}
-            {/* <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-lg font-bold mb-4">Time Distribution</h3>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, hours }) => `${name}: ${hours}`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div> */}
 
-            {/* Summary */}
-            {/* <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-lg font-bold mb-4">Summary</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between p-4 bg-blue-50 rounded">
-                  <span className="font-medium">Total Work Duration</span>
-                  <span className="text-xl font-bold text-blue-600">
-                    {formatDurationFromSeconds(reportData.attendance?.total_work_duration || 0)}
-                  </span>
-                </div>
-                <div className="flex justify-between p-4 bg-green-50 rounded">
-                  <span className="font-medium">Active Duration</span>
-                  <span className="text-xl font-bold text-green-600">
-                    {formatDurationFromSeconds(reportData.attendance?.total_active_duration || 0)}
-                  </span>
-                </div>
-                <div className="flex justify-between p-4 bg-yellow-50 rounded">
-                  <span className="font-medium">Idle Duration</span>
-                  <span className="text-xl font-bold text-yellow-600">
-                    {formatDurationFromSeconds(reportData.attendance?.total_idle_duration || 0)}
-                  </span>
-                </div>
-                <div className="flex justify-between p-4 bg-orange-50 rounded">
-                  <span className="font-medium">Break Duration</span>
-                  <span className="text-xl font-bold text-orange-600">
-                    {formatDurationFromSeconds(reportData.attendance?.total_break_duration || 0)}
-                  </span>
-                </div>
-                <div className="flex justify-between p-4 bg-purple-50 rounded">
-                  <span className="font-medium">Status</span>
-                  <span className="text-xl font-bold text-purple-600">
-                    {reportData.attendance?.status || 'N/A'}
-                  </span>
-                </div>
-                <div className="flex justify-between p-4 bg-gray-50 rounded">
-                  <span className="font-medium">Screenshots</span>
-                  <span className="text-xl font-bold">{reportData.screenshot_count}</span>
-                </div>
-                <div className="flex justify-between p-4 bg-gray-50 rounded">
-                  <span className="font-medium">Mouse Clicks</span>
-                  <span className="text-xl font-bold">{reportData.total_mouse_clicks}</span>
-                </div>
-                <div className="flex justify-between p-4 bg-gray-50 rounded">
-                  <span className="font-medium">Keyboard Strokes</span>
-                  <span className="text-xl font-bold">{reportData.total_keyboard_strokes}</span>
-                </div>
-              </div>
-            </div> */}
-          </div>
-        )}
 
         {reportData && (
+          // <div className="bg-white rounded-lg shadow-md p-6 mt-6">
+          //   <h3 className="text-lg font-bold mb-4">Attendance Details</h3>
+          //   {reportData.attendance_records && reportData.attendance_records.length > 0 ? (
+          //     reportData.attendance_records.map((attendance, idx) => (
+          //       <div key={idx} className="mb-4 border-b pb-2">
+          //         <p><strong>Date:</strong> {attendance?.date ? new Date(attendance.date).toLocaleDateString() : 'N/A'}</p>
+          //         <p><strong>Check-in:</strong> {attendance?.check_in_time ? new Date(attendance.check_in_time).toLocaleString() : 'N/A'}</p>
+          //         <p><strong>Check-out:</strong> {attendance?.check_out_time ? new Date(attendance.check_out_time).toLocaleString() : 'N/A'}</p>
+          //         {/* <p><strong>Check-in IP:</strong> {attendance?.check_in_ip || 'N/A'}</p> */}
+          //         <p><strong>Total Work Duration:</strong> {formatDurationFromSeconds(attendance?.total_work_duration) || 'N/A'}</p>
+          //         <p><strong>Total Active Duration:</strong> {formatDurationFromSeconds(attendance?.total_active_duration) || 'N/A'}</p>
+          //         {/* <p><strong>Notes:</strong> {attendance?.notes || 'N/A'}</p> */}
+          //       </div>
+          //     ))
+          //   ) : (
+          //     <p className="text-gray-500">No attendance records available</p>
+          //   )}
+          // </div>
           <div className="bg-white rounded-lg shadow-md p-6 mt-6">
             <h3 className="text-lg font-bold mb-4">Attendance Details</h3>
-            {reportData.attendance_records && reportData.attendance_records.length > 0 ? (
-              reportData.attendance_records.map((attendance, idx) => (
-                <div key={idx} className="mb-4 border-b pb-2">
-                  <p><strong>Date:</strong> {attendance?.date ? new Date(attendance.date).toLocaleDateString() : 'N/A'}</p>
-                  <p><strong>Check-in:</strong> {attendance?.check_in_time ? new Date(attendance.check_in_time).toLocaleString() : 'N/A'}</p>
-                  <p><strong>Check-out:</strong> {attendance?.check_out_time ? new Date(attendance.check_out_time).toLocaleString() : 'N/A'}</p>
-                  {/* <p><strong>Check-in IP:</strong> {attendance?.check_in_ip || 'N/A'}</p> */}
-                  <p><strong>Total Work Duration:</strong> {formatDurationFromSeconds(attendance?.total_work_duration) || 'N/A'}</p>
-                  <p><strong>Total Active Duration:</strong> {formatDurationFromSeconds(attendance?.total_active_duration) || 'N/A'}</p>
-                  {/* <p><strong>Notes:</strong> {attendance?.notes || 'N/A'}</p> */}
-                </div>
-              ))
+
+            {reportData.attendance_records &&
+              reportData.attendance_records.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full border border-gray-200 rounded-lg">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border">
+                        Date
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border">
+                        Check-In
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border">
+                        Check-Out
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border">
+                        Work Duration
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border">
+                        Active Duration
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {reportData.attendance_records.map((attendance, idx) => (
+                      <tr
+                        key={idx}
+                        className="hover:bg-gray-50 transition"
+                      >
+                        <td className="px-4 py-2 border text-sm">
+                          {attendance?.date
+                            ? new Date(attendance.date).toLocaleDateString()
+                            : "N/A"}
+                        </td>
+
+                        <td className="px-4 py-2 border text-sm">
+                          {attendance?.check_in_time
+                            ? new Date(attendance.check_in_time).toLocaleTimeString()
+                            : "N/A"}
+                        </td>
+
+                        <td className="px-4 py-2 border text-sm">
+                          {attendance?.check_out_time
+                            ? new Date(attendance.check_out_time).toLocaleTimeString()
+                            : "N/A"}
+                        </td>
+
+                        <td className="px-4 py-2 border text-sm">
+                          {formatDurationFromSeconds(
+                            attendance?.total_work_duration
+                          ) || "N/A"}
+                        </td>
+
+                        <td className="px-4 py-2 border text-sm">
+                          {formatDurationFromSeconds(
+                            attendance?.total_active_duration
+                          ) || "N/A"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <p className="text-gray-500">No attendance records available</p>
             )}
           </div>
         )}
-
-        {/* Activities */}
-        {/* <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-bold mb-4">Activities</h3>
-          {reportData.activities && reportData.activities.length > 0 ? (
-            <ul className="list-disc pl-6 space-y-2">
-              {reportData.activities.map((act, idx) => (
-                <li key={idx}>
-                  {act.activity_type} — Count: {act.count}, Duration: {formatDurationFromSeconds(act.total_duration || 0)}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-500">No activities recorded</p>
-          )}
-        </div> */}
       </div>
     </div>
   );
