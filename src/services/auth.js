@@ -28,7 +28,6 @@ export const login = async (email, password) => {
 
 export const logout = async () => {
   try {
-    await api.post('/api/attendance/check-out');
     await api.post('/api/auth/logout');
   } catch (error) {
     console.error('Logout error:', error);
