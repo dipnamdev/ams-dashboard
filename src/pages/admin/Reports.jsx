@@ -62,63 +62,51 @@ function Reports() {
 
     const wb = XLSX.utils.book_new();
 
-    // 1. Summary sheet
-    const summaryData = [
-      ['Metric', 'Value'],
-      ['Total Hours', formatDurationFromSeconds(reportData.total_hours)],
-      ['Active Time', formatDurationFromSeconds(reportData.active_time)],
-      ['Idle Time', formatDurationFromSeconds(reportData.idle_time)],
-      ['Break Time', formatDurationFromSeconds(reportData.break_time)],
-    ];
-    const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
-    XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
-
-    // 2. Attendance details sheet (sorted in increasing order)
-    if (reportData.attendance_records && reportData.attendance_records.length > 0) {
-      const sortedRecords = [...reportData.attendance_records].sort((a, b) => new Date(a.date) - new Date(b.date));
+    const sortedRecords = reportData.attendance_records
+      ? [...reportData.attendance_records].sort((a, b) => new Date(a.date) - new Date(b.date))
+      : [];
       
-      const recordsData = [
-        ['Date', 'Check-In', 'Check-Out', 'Work Duration', 'Active Duration', 'Active Time - 8h']
-      ];
+    const recordsData = [
+      ['Date', 'Check-In', 'Check-Out', 'Work Duration', 'Active Duration', 'Active Time - 8h']
+    ];
 
-      sortedRecords.forEach((attendance) => {
-        const dateStr = attendance?.date ? new Date(attendance.date).toLocaleDateString() : 'N/A';
-        const checkInStr = attendance?.check_in_time ? new Date(attendance.check_in_time).toLocaleTimeString() : 'N/A';
-        const checkOutStr = attendance?.check_out_time ? new Date(attendance.check_out_time).toLocaleTimeString() : 'N/A';
-        const workDur = formatDurationFromSeconds(attendance?.total_work_duration) || 'N/A';
-        const activeDur = formatDurationFromSeconds(attendance?.total_active_duration) || 'N/A';
-        
-        // Calculate active time - 8h
-        const diffSeconds = (attendance?.total_active_duration || 0) - 28800;
-        const sign = diffSeconds >= 0 ? '+' : '-';
-        const absDiff = Math.abs(diffSeconds);
-        const hours = Math.floor(absDiff / 3600);
-        const minutes = Math.floor((absDiff % 3600) / 60);
-        const diffStr = hours > 0 ? `${sign}${hours}h ${minutes}m` : `${sign}${minutes}m`;
-        const activeDiffStr = diffSeconds === 0 ? '0m' : diffStr;
+    sortedRecords.forEach((attendance) => {
+      const dateStr = attendance?.date ? new Date(attendance.date).toLocaleDateString() : 'N/A';
+      const checkInStr = attendance?.check_in_time ? new Date(attendance.check_in_time).toLocaleTimeString() : 'N/A';
+      const checkOutStr = attendance?.check_out_time ? new Date(attendance.check_out_time).toLocaleTimeString() : 'N/A';
+      const workDur = formatDurationFromSeconds(attendance?.total_work_duration) || 'N/A';
+      const activeDur = formatDurationFromSeconds(attendance?.total_active_duration) || 'N/A';
+      
+      // Calculate active time - 8h
+      const diffSeconds = (attendance?.total_active_duration || 0) - 28800;
+      const sign = diffSeconds >= 0 ? '+' : '-';
+      const absDiff = Math.abs(diffSeconds);
+      const hours = Math.floor(absDiff / 3600);
+      const minutes = Math.floor((absDiff % 3600) / 60);
+      const diffStr = hours > 0 ? `${sign}${hours}h ${minutes}m` : `${sign}${minutes}m`;
+      const activeDiffStr = diffSeconds === 0 ? '0m' : diffStr;
 
-        recordsData.push([
-          dateStr,
-          checkInStr,
-          checkOutStr,
-          workDur,
-          activeDur,
-          activeDiffStr
-        ]);
-      });
+      recordsData.push([
+        dateStr,
+        checkInStr,
+        checkOutStr,
+        workDur,
+        activeDur,
+        activeDiffStr
+      ]);
+    });
 
-      const wsRecords = XLSX.utils.aoa_to_sheet(recordsData);
-      XLSX.utils.book_append_sheet(wb, wsRecords, 'Attendance Details');
-    }
+    const wsRecords = XLSX.utils.aoa_to_sheet(recordsData);
+    XLSX.utils.book_append_sheet(wb, wsRecords, 'Attendance Details');
 
     const fileName = `${employeeName}_${startDate}_${endDate}.xlsx`;
     XLSX.writeFile(wb, fileName);
   };
 
-  const chartData = reportData ? [
-    { name: 'Active', value: reportData.active_time || 0, hours: formatDurationFromSeconds(reportData.active_time) },
-    { name: 'Idle', value: reportData.idle_time || 0, hours: formatDurationFromSeconds(reportData.idle_time) },
-    { name: 'Break', value: reportData.break_time || 0, hours: formatDurationFromSeconds(reportData.break_time) },
+  const chartData = reportData?.summary ? [
+    { name: 'Active', value: Number(reportData.summary.total_active) || 0, hours: formatDurationFromSeconds(reportData.summary.total_active) },
+    { name: 'Idle', value: Number(reportData.summary.total_idle) || 0, hours: formatDurationFromSeconds(reportData.summary.total_idle) },
+    { name: 'Break', value: Number(reportData.summary.total_break) || 0, hours: formatDurationFromSeconds(reportData.summary.total_break) },
   ] : [];
 
   // Sort attendance records by date ascending for UI rendering
