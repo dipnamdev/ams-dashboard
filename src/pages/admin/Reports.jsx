@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../../components/Navbar';
-import { Download, BarChart3 } from 'lucide-react';
+import { Download, BarChart3, Loader2 } from 'lucide-react';
 import api from '../../services/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { formatDurationFromSeconds } from '../../utils/formatTime';
+import * as XLSX from 'xlsx';
 
 const COLORS = ['#10b981', '#f59e0b', '#ef4444', '#3b82f6'];
 
@@ -40,9 +41,11 @@ function Reports() {
     setLoading(true);
     try {
       const url = `/api/reports/weekly?start_date=${startDate}&end_date=${endDate}${selectedEmployee ? `&user_id=${selectedEmployee}` : ''}`;
-      const response = await api.get(url);
+      const [response] = await Promise.all([
+        api.get(url),
+        new Promise(resolve => setTimeout(resolve, 600)) // Ensure visual loader is seen
+      ]);
       setReportData(response.data.data?.report || null);
-      console.log(reportData)
     } catch (error) {
       console.error('Error fetching report:', error);
     } finally {
@@ -50,23 +53,66 @@ function Reports() {
     }
   };
 
-  const exportCSV = () => {
+  const exportExcel = () => {
     if (!reportData) return;
 
-    const csvContent = [
+    // Get selected employee's name
+    const employeeObj = employees.find(emp => String(emp.id) === String(selectedEmployee));
+    const employeeName = employeeObj ? employeeObj.name : 'All_Employees';
+
+    const wb = XLSX.utils.book_new();
+
+    // 1. Summary sheet
+    const summaryData = [
       ['Metric', 'Value'],
       ['Total Hours', formatDurationFromSeconds(reportData.total_hours)],
       ['Active Time', formatDurationFromSeconds(reportData.active_time)],
       ['Idle Time', formatDurationFromSeconds(reportData.idle_time)],
       ['Break Time', formatDurationFromSeconds(reportData.break_time)],
-    ].map(row => row.join(',')).join('\n');
+    ];
+    const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
 
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `report_${startDate}_to_${endDate}.csv`;
-    a.click();
+    // 2. Attendance details sheet (sorted in increasing order)
+    if (reportData.attendance_records && reportData.attendance_records.length > 0) {
+      const sortedRecords = [...reportData.attendance_records].sort((a, b) => new Date(a.date) - new Date(b.date));
+      
+      const recordsData = [
+        ['Date', 'Check-In', 'Check-Out', 'Work Duration', 'Active Duration', 'Active Time - 8h']
+      ];
+
+      sortedRecords.forEach((attendance) => {
+        const dateStr = attendance?.date ? new Date(attendance.date).toLocaleDateString() : 'N/A';
+        const checkInStr = attendance?.check_in_time ? new Date(attendance.check_in_time).toLocaleTimeString() : 'N/A';
+        const checkOutStr = attendance?.check_out_time ? new Date(attendance.check_out_time).toLocaleTimeString() : 'N/A';
+        const workDur = formatDurationFromSeconds(attendance?.total_work_duration) || 'N/A';
+        const activeDur = formatDurationFromSeconds(attendance?.total_active_duration) || 'N/A';
+        
+        // Calculate active time - 8h
+        const diffSeconds = (attendance?.total_active_duration || 0) - 28800;
+        const sign = diffSeconds >= 0 ? '+' : '-';
+        const absDiff = Math.abs(diffSeconds);
+        const hours = Math.floor(absDiff / 3600);
+        const minutes = Math.floor((absDiff % 3600) / 60);
+        const diffStr = hours > 0 ? `${sign}${hours}h ${minutes}m` : `${sign}${minutes}m`;
+        const activeDiffStr = diffSeconds === 0 ? '0m' : diffStr;
+
+        recordsData.push([
+          dateStr,
+          checkInStr,
+          checkOutStr,
+          workDur,
+          activeDur,
+          activeDiffStr
+        ]);
+      });
+
+      const wsRecords = XLSX.utils.aoa_to_sheet(recordsData);
+      XLSX.utils.book_append_sheet(wb, wsRecords, 'Attendance Details');
+    }
+
+    const fileName = `${employeeName}_${startDate}_${endDate}.xlsx`;
+    XLSX.writeFile(wb, fileName);
   };
 
   const chartData = reportData ? [
@@ -74,6 +120,11 @@ function Reports() {
     { name: 'Idle', value: reportData.idle_time || 0, hours: formatDurationFromSeconds(reportData.idle_time) },
     { name: 'Break', value: reportData.break_time || 0, hours: formatDurationFromSeconds(reportData.break_time) },
   ] : [];
+
+  // Sort attendance records by date ascending for UI rendering
+  const sortedRecords = reportData?.attendance_records
+    ? [...reportData.attendance_records].sort((a, b) => new Date(a.date) - new Date(b.date))
+    : [];
 
   return (
     <div className="space-y-6">
@@ -85,12 +136,12 @@ function Reports() {
             Reports
           </h2>
           <button
-            onClick={exportCSV}
-            disabled={!reportData}
+            onClick={exportExcel}
+            disabled={!reportData || loading}
             className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-300"
           >
             <Download size={20} />
-            <span>Export CSV</span>
+            <span>Export Excel</span>
           </button>
         </div>
 
@@ -136,44 +187,28 @@ function Reports() {
               />
             </div>
 
-
             <div className="flex items-end">
               <button
                 onClick={fetchReport}
-                className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 h-[42px]"
+                disabled={loading}
+                className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 h-[42px] disabled:bg-blue-400"
               >
-                Fetch Report
+                {loading ? 'Fetching...' : 'Fetch Report'}
               </button>
             </div>
           </div>
         </div>
 
-
-
-        {reportData && (
-          // <div className="bg-white rounded-lg shadow-md p-6 mt-6">
-          //   <h3 className="text-lg font-bold mb-4">Attendance Details</h3>
-          //   {reportData.attendance_records && reportData.attendance_records.length > 0 ? (
-          //     reportData.attendance_records.map((attendance, idx) => (
-          //       <div key={idx} className="mb-4 border-b pb-2">
-          //         <p><strong>Date:</strong> {attendance?.date ? new Date(attendance.date).toLocaleDateString() : 'N/A'}</p>
-          //         <p><strong>Check-in:</strong> {attendance?.check_in_time ? new Date(attendance.check_in_time).toLocaleString() : 'N/A'}</p>
-          //         <p><strong>Check-out:</strong> {attendance?.check_out_time ? new Date(attendance.check_out_time).toLocaleString() : 'N/A'}</p>
-          //         {/* <p><strong>Check-in IP:</strong> {attendance?.check_in_ip || 'N/A'}</p> */}
-          //         <p><strong>Total Work Duration:</strong> {formatDurationFromSeconds(attendance?.total_work_duration) || 'N/A'}</p>
-          //         <p><strong>Total Active Duration:</strong> {formatDurationFromSeconds(attendance?.total_active_duration) || 'N/A'}</p>
-          //         {/* <p><strong>Notes:</strong> {attendance?.notes || 'N/A'}</p> */}
-          //       </div>
-          //     ))
-          //   ) : (
-          //     <p className="text-gray-500">No attendance records available</p>
-          //   )}
-          // </div>
+        {loading ? (
+          <div className="bg-white rounded-lg shadow-md p-12 flex flex-col items-center justify-center mt-6">
+            <Loader2 className="h-10 w-10 animate-spin text-blue-600 mb-4" />
+            <p className="text-gray-500 font-medium">Loading report details...</p>
+          </div>
+        ) : reportData ? (
           <div className="bg-white rounded-lg shadow-md p-6 mt-6">
             <h3 className="text-lg font-bold mb-4">Attendance Details</h3>
 
-            {reportData.attendance_records &&
-              reportData.attendance_records.length > 0 ? (
+            {sortedRecords.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="min-w-full border border-gray-200 rounded-lg">
                   <thead className="bg-gray-100">
@@ -193,46 +228,63 @@ function Reports() {
                       <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border">
                         Active Duration
                       </th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border">
+                        Active Time - 8h
+                      </th>
                     </tr>
                   </thead>
 
                   <tbody>
-                    {reportData.attendance_records.map((attendance, idx) => (
-                      <tr
-                        key={idx}
-                        className="hover:bg-gray-50 transition"
-                      >
-                        <td className="px-4 py-2 border text-sm">
-                          {attendance?.date
-                            ? new Date(attendance.date).toLocaleDateString()
-                            : "N/A"}
-                        </td>
+                    {sortedRecords.map((attendance, idx) => {
+                      const diffSeconds = (attendance?.total_active_duration || 0) - 28800;
+                      const sign = diffSeconds >= 0 ? '+' : '-';
+                      const absDiff = Math.abs(diffSeconds);
+                      const hours = Math.floor(absDiff / 3600);
+                      const minutes = Math.floor((absDiff % 3600) / 60);
+                      const diffStr = hours > 0 ? `${sign}${hours}h ${minutes}m` : `${sign}${minutes}m`;
+                      const activeDiffStr = diffSeconds === 0 ? '0m' : diffStr;
 
-                        <td className="px-4 py-2 border text-sm">
-                          {attendance?.check_in_time
-                            ? new Date(attendance.check_in_time).toLocaleTimeString()
-                            : "N/A"}
-                        </td>
+                      return (
+                        <tr
+                          key={idx}
+                          className="hover:bg-gray-50 transition"
+                        >
+                          <td className="px-4 py-2 border text-sm">
+                            {attendance?.date
+                              ? new Date(attendance.date).toLocaleDateString()
+                              : "N/A"}
+                          </td>
 
-                        <td className="px-4 py-2 border text-sm">
-                          {attendance?.check_out_time
-                            ? new Date(attendance.check_out_time).toLocaleTimeString()
-                            : "N/A"}
-                        </td>
+                          <td className="px-4 py-2 border text-sm">
+                            {attendance?.check_in_time
+                              ? new Date(attendance.check_in_time).toLocaleTimeString()
+                              : "N/A"}
+                          </td>
 
-                        <td className="px-4 py-2 border text-sm">
-                          {formatDurationFromSeconds(
-                            attendance?.total_work_duration
-                          ) || "N/A"}
-                        </td>
+                          <td className="px-4 py-2 border text-sm">
+                            {attendance?.check_out_time
+                              ? new Date(attendance.check_out_time).toLocaleTimeString()
+                              : "N/A"}
+                          </td>
 
-                        <td className="px-4 py-2 border text-sm">
-                          {formatDurationFromSeconds(
-                            attendance?.total_active_duration
-                          ) || "N/A"}
-                        </td>
-                      </tr>
-                    ))}
+                          <td className="px-4 py-2 border text-sm">
+                            {formatDurationFromSeconds(
+                              attendance?.total_work_duration
+                            ) || "N/A"}
+                          </td>
+
+                          <td className="px-4 py-2 border text-sm">
+                            {formatDurationFromSeconds(
+                              attendance?.total_active_duration
+                            ) || "N/A"}
+                          </td>
+
+                          <td className={`px-4 py-2 border text-sm font-semibold ${diffSeconds >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                            {activeDiffStr}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -240,7 +292,7 @@ function Reports() {
               <p className="text-gray-500">No attendance records available</p>
             )}
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
