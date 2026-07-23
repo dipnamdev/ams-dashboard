@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '../../components/Navbar';
-import { Download, BarChart3, Loader2 } from 'lucide-react';
+import { Download, BarChart3, Loader2, FileSpreadsheet } from 'lucide-react';
+import toast from 'react-hot-toast';
 import api from '../../services/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { formatDurationFromSeconds } from '../../utils/formatTime';
 import * as XLSX from 'xlsx';
 
 const COLORS = ['#10b981', '#f59e0b', '#ef4444', '#3b82f6'];
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
 
 function Reports() {
   const [startDate, setStartDate] = useState('');
@@ -15,6 +21,11 @@ function Reports() {
   const [employees, setEmployees] = useState([]);
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  const now = new Date();
+  const [registerMonth, setRegisterMonth] = useState(now.getMonth() + 1);
+  const [registerYear, setRegisterYear] = useState(now.getFullYear());
+  const [registerLoading, setRegisterLoading] = useState(false);
 
   useEffect(() => {
     fetchEmployees();
@@ -103,6 +114,48 @@ function Reports() {
     XLSX.writeFile(wb, fileName);
   };
 
+  const downloadMonthlyRegister = async () => {
+    setRegisterLoading(true);
+    try {
+      const response = await api.get('/api/reports/monthly-register', {
+        params: { month: registerMonth, year: registerYear },
+        responseType: 'blob',
+      });
+
+      const blob = new Blob([response.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const fileName = `Attendance_Register_${registerYear}-${String(registerMonth).padStart(2, '0')}.xlsx`;
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      // With responseType: 'blob', an error response body also arrives as a
+      // Blob, so it has to be read back out as text before it can be parsed
+      // as the JSON error the backend actually sent.
+      let message = 'Failed to download the monthly register.';
+      if (error.response?.data instanceof Blob) {
+        try {
+          const text = await error.response.data.text();
+          const parsed = JSON.parse(text);
+          message = parsed?.error?.message || message;
+        } catch (_) {
+          // Fall back to the generic message above
+        }
+      }
+      console.error('Error downloading monthly register:', error);
+      toast.error(message);
+    } finally {
+      setRegisterLoading(false);
+    }
+  };
+
   const chartData = reportData?.summary ? [
     { name: 'Active', value: Number(reportData.summary.total_active) || 0, hours: formatDurationFromSeconds(reportData.summary.total_active) },
     { name: 'Idle', value: Number(reportData.summary.total_idle) || 0, hours: formatDurationFromSeconds(reportData.summary.total_idle) },
@@ -131,6 +184,64 @@ function Reports() {
             <Download size={20} />
             <span>Export Excel</span>
           </button>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h3 className="text-lg font-bold mb-4 flex items-center">
+            <FileSpreadsheet className="mr-2" size={20} />
+            Monthly Attendance Register
+          </h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Download the full-month IN/OUT register for all employees, formatted like the existing attendance sheet.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Month
+              </label>
+              <select
+                value={registerMonth}
+                onChange={(e) => setRegisterMonth(Number(e.target.value))}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                {MONTH_NAMES.map((name, idx) => (
+                  <option key={name} value={idx + 1}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Year
+              </label>
+              <input
+                type="number"
+                value={registerYear}
+                onChange={(e) => setRegisterYear(Number(e.target.value))}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex items-end md:col-span-2">
+              <button
+                onClick={downloadMonthlyRegister}
+                disabled={registerLoading}
+                className="w-full flex items-center justify-center space-x-2 bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 h-[42px] disabled:bg-gray-300"
+              >
+                {registerLoading ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    <span>Generating...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download size={18} />
+                    <span>Download Register</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
