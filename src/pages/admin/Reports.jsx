@@ -236,7 +236,7 @@ function Reports() {
                 ) : (
                   <>
                     <Download size={18} />
-                    <span>Download Register</span>
+                    <span>Download Report</span>
                   </>
                 )}
               </button>
